@@ -1,0 +1,17 @@
+---
+# tasks to install the glusterfs
+- name: gluster_install | Install the glusterfs repo
+  yum:
+    name: "{{ gluster_repo }}"
+    state: latest
+
+- name: gluster_install | Install the glusterfs server
+  yum:
+    name: glusterfs-server
+    state: latest
+
+- name: gluster_install | Enable the glusterfs service
+  systemd:
+    name: glusterd
+    enabled: yes
+    state: started

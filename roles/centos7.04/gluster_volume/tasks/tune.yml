@@ -1,0 +1,3 @@
+---
+- name: gluster_volume | Enable the eager-lock in gluster volume
+  command: "gluster volume set {{ volume_name }} cluster.eager-lock enable"

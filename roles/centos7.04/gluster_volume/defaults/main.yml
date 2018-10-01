@@ -1,0 +1,5 @@
+---
+## Create gluster bricks variable
+gluster_bricks: "{{ gluster_mount_path }}/brick"
+
+gluster_hosts: "{{ groups['gluster'] }}"

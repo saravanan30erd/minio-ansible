@@ -1,0 +1,15 @@
+---
+# tasks to configure the glusterfs
+
+- name: gluster_configure | Create the glusterfs cluster
+  command: "gluster peer probe {{ item }}"
+  with_items: "{{ groups['gluster'] }}"
+  when: item != inventory_hostname
+
+- name: gluster_configure | Check the glusterfs cluster status
+  command: gluster peer status
+  register: cluster_status
+
+- name: gluster_configure | Status of the glusterfs cluster
+  debug:
+    msg: "{{ cluster_status.stdout }}"

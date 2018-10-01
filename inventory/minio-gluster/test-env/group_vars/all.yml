@@ -1,0 +1,45 @@
+##### Gluster #####
+# Disk to use for gluster creation
+disk_path: /dev/xvdb
+
+# Mount path for gluster bricks
+gluster_mount_path: /mnt/brick1
+
+# Gluster repo to install gluster packages
+gluster_repo: centos-release-gluster40
+
+# Gluster replica count for distribute-replicate volume
+replica_count: 3
+
+##### Minio #####
+volume_name: minio
+minio_mount_path: /mnt/glusterfs
+
+# Gluster servers to use to mount the volume
+gluster_primary_server: [ brick1, brick3 ]
+gluster_backup_server: [ brick2, brick4 ]
+
+# minio installation parameters
+minio_server_download_url: https://dl.minio.io/server/minio/release/linux-amd64/minio
+minio_server_bin: /usr/local/bin/minio
+
+# Runtime user and group for the minio server service
+minio_user: minio
+minio_group: minio
+
+# Minio binaries path
+minio_server_bin: /usr/local/bin/minio
+
+# Minio server listen address
+minio_server_addr: ":8080"
+
+# Minio credentials
+minio_access_key: <access_key>
+minio_secret_key: <secret_key>
+
+# Switches to disable minio client installation
+skip_client: True
+
+# Minio client mc parameters
+minio_client_download_url: https://dl.minio.io/client/mc/release/linux-amd64/mc
+minio_client_bin: /usr/local/bin/mc

@@ -1,0 +1,23 @@
+---
+# tasks to install and configure the Minio
+- name: minio_install | Populate the gluster nodes to minio /etc/hosts
+  import_tasks: etchosts.yml
+
+- name: minio_install | Disable the selinux
+  selinux:
+    state: disabled
+
+- name: minio_install | Mount the glusterfs volume
+  import_tasks: mount.yml
+
+- name: minio_install | Install the minio server
+  import_tasks: install-server.yml
+
+- name: minio_install | Install the minio client
+  get_url:
+    url: "{{ minio_client_download_url }}"
+    dest: "{{ minio_client_bin }}"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: 0755
+  when: not skip_client

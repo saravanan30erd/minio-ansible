@@ -1,0 +1,2 @@
+# All inventory hostnames will be written into each /etc/hosts file.
+populate_inventory_to_hosts_file: true

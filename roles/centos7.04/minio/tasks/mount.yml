@@ -1,0 +1,78 @@
+---
+- name: minio_prepare | Add the fuse module
+  modprobe:
+    name: fuse
+    state: present
+
+- name: minio_prepare | Install the prerequisites for gluster client
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - openssh-server
+    - wget
+    - fuse
+    - fuse-libs
+    - libibverbs
+
+- name: minio_prepare | Install the glusterfs repo
+  yum:
+    name: "{{ gluster_repo }}"
+    state: latest
+
+- name: minio_prepare | Install the glusterfs client
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - glusterfs
+    - glusterfs-fuse
+    - attr
+
+- name: minio_prepare | Create the mountpoint directory
+  file:
+    path: "{{ minio_mount_path }}"
+    state: directory
+
+- name: minio_prepare | stop if minio service is already running
+  systemd:
+    name: minio
+    state: stopped
+  ignore_errors: True
+
+- name: "minio_prepare | umount {{ minio_mount_path }} if already mounted"
+  command: "umount {{ minio_mount_path }}"
+  ignore_errors: True
+
+- name: minio_prepare | Set variable primary_server
+  set_fact:
+    primary_server: "{{ item }}"
+  with_random_choice: "{{ gluster_primary_server }}"
+
+- name: minio_prepare | Set variable backup_server
+  set_fact:
+    backup_server: "{{ item }}"
+  with_random_choice: "{{ gluster_backup_server }}"
+
+- name: minio_prepare | Create entry in fstab
+  mount:
+    path: "{{ minio_mount_path }}"
+    src: "{{ primary_server }}:/{{ volume_name }}"
+    opts: "backupvolfile-server={{ backup_server }},use-readdirp=no,fetch-attempts=2,log-level=WARNING,log-file=/var/log/gluster.log,defaults,_netdev"
+    fstype: glusterfs
+    state: present
+
+- name: minio_prepare | Mount the partitions in fstab
+  command: mount -a
+  args:
+    warn: no
+  ignore_errors: True
+
+- name: "minio_prepare | Ensure the {{ minio_mount_path }} is mounted"
+  command: "mountpoint -q {{ minio_mount_path }}"
+  register: mounted
+
+- name: "minio_prepare | Is {{ minio_mount_path }} mounted?"
+  debug:
+    msg: "Yes, It is."
+  when: mounted.rc == 0

@@ -1,0 +1,25 @@
+---
+- hosts: gluster
+  gather_facts: false
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: centos7.04/gluster_prepare }
+    - { role: centos7.04/gluster_install }
+
+- hosts: brick1
+  gather_facts: false
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: centos7.04/gluster_configure }
+
+- hosts: brick1
+  gather_facts: false
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: centos7.04/gluster_volume }
+    
+- hosts: minio
+  gather_facts: false
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - { role: centos7.04/minio }

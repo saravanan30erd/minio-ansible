@@ -1,0 +1,46 @@
+---
+- name: gluster_volume | Check the volume exists already
+  stat:
+    path: "{{ gluster_mount_path }}/brick/.glusterfs"
+  register: volume_state
+
+- name: gluster_volume | Create a Distribute-replicated volume
+  gluster_volume:
+    state: present
+    name: "{{ volume_name }}"
+    bricks: "{{ gluster_bricks }}"
+    cluster: "{{ gluster_hosts }}"
+    replicas: "{{ replica_count }}"
+    transport: tcp
+  run_once: true
+  when: not volume_state.stat.exists
+  register: volume_create
+
+- name: gluster_volume | Start the gluster volume
+  gluster_volume:
+    state: started
+    name: "{{ volume_name }}"
+
+- name: gluster_volume | Check the gluster volume status
+  command: gluster volume info
+  register: volume_status
+
+- name: gluster_volume | Status of the gluster volume
+  debug:
+    msg: "{{ volume_status.stdout }}"
+
+- name: gluster_volume | stop the gluster volume
+  gluster_volume:
+    state: stopped
+    name: "{{ volume_name }}"
+  tags: ['never', 'clean']
+
+- name: gluster_volume | remove the gluster volume
+  gluster_volume:
+    state: absent
+    name: "{{ volume_name }}"
+  tags: ['never', 'clean']
+
+- name: gluster_volume | Tune the gluster volume
+  import_tasks: tune.yml
+  when: volume_create.changed

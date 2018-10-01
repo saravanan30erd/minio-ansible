@@ -1,0 +1,87 @@
+---
+# tasks to prepare the servers to setup glusterfs cluster
+- name: gluster_prepare | Disable the selinux
+  selinux:
+    state: disabled
+
+- name: gluster_prepare | Populate the /etc/hosts for all nodes
+  import_tasks: etchosts.yml
+
+- name: gluster_prepare | Check the disk exists
+  stat:
+    path: "{{ disk_path }}"
+  register: disk_detail
+  tags:
+    - clean-disk
+
+- name: gluster_prepare | Check the disk have partitions already
+  stat:
+    path: "{{ disk_path }}1"
+  register: partitions_detail
+  when: disk_detail.stat.exists
+  #failed_when: partitions_detail.stat.exists
+
+- name: gluster_prepare | Create a new primary partition
+  parted:
+    device: "{{ disk_path }}"
+    number: 1
+    state: present
+  when: disk_detail.stat.exists and not partitions_detail.stat.exists
+  register: partition_detail
+
+- name: "gluster_prepare | Umount the {{ disk_path }}1 partition"
+  command: "umount {{ disk_path }}1"
+  tags: ['never', 'clean']
+  ignore_errors: True
+
+- name: gluster_prepare | Remove partition
+  parted:
+    device: "{{ disk_path }}"
+    number: 1
+    state: absent
+  tags: ['never', 'clean']
+  ignore_errors: True
+
+- name: "gluster_prepare | Create an filesystem on {{ disk_path }}1"
+  filesystem:
+    fstype: "{{ filesystem_type | default('xfs') }}"
+    dev: "{{ disk_path }}1"
+  when: partition_detail.changed
+
+- name: gluster_prepare | Create an mountpoint directory
+  file:
+    path: "{{ gluster_mount_path }}"
+    state: directory
+
+- name: gluster_prepare | Create entry in fstab
+  mount:
+    path: "{{ gluster_mount_path }}"
+    src: "{{ disk_path }}1"
+    fstype: xfs
+    state: present
+
+- name: gluster_prepare | Mount the partitions in fstab
+  command: mount -a
+  args:
+    warn: no
+  ignore_errors: True
+
+- name: "gluster_prepare | Ensure the {{ gluster_mount_path }} is mounted"
+  command: "mountpoint -q {{ gluster_mount_path }}"
+  register: mounted
+
+- name: "gluster_prepare | Is {{ gluster_mount_path }} mounted?"
+  debug:
+    msg: "Yes, It is."
+  when: mounted.rc == 0
+
+- name: "gluster_prepare | Create the brick directory under brick mount point"
+  file:
+    path: "{{ gluster_mount_path }}/brick"
+    state: directory
+
+- name: "gluster_prepare | Delete the brick directory under brick mount point"
+  file:
+    path: "{{ gluster_mount_path }}/brick"
+    state: absent
+  tags: ['never', 'clean']
