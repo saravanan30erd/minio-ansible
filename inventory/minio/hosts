@@ -1,0 +1,10 @@
+minio-01 ansible_host=10.0.0.2 ansible_user=root ip=10.0.0.2
+minio-02 ansible_host=10.0.0.3 ansible_user=root ip=10.0.0.3
+minio-03 ansible_host=10.0.0.4 ansible_user=root ip=10.0.0.4
+minio-04 ansible_host=10.0.0.5 ansible_user=root ip=10.0.0.5
+
+[minio]
+minio-01
+minio-02
+minio-03
+minio-04
