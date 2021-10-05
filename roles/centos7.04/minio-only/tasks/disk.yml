@@ -1,0 +1,66 @@
+---
+
+- name: disk_prepare | Check the disk exists
+  stat:
+    path: "{{ disk_path }}"
+  register: disk_detail
+
+- name: disk_prepare | Check the disk have partitions already
+  stat:
+    path: "{{ disk_path }}1"
+  register: partitions_detail
+  when: disk_detail.stat.exists
+
+- name: disk_prepare | Create a new primary partition
+  parted:
+    device: "{{ disk_path }}"
+    number: 1
+    state: present
+  when: disk_detail.stat.exists and not partitions_detail.stat.exists
+  register: partition_detail
+
+- name: "disk_prepare | Umount the {{ disk_path }}1 partition"
+  command: "umount {{ disk_path }}1"
+  tags: ['never', 'clean']
+  ignore_errors: True
+
+- name: disk_prepare | Remove partition
+  parted:
+    device: "{{ disk_path }}"
+    number: 1
+    state: absent
+  tags: ['never', 'clean']
+  ignore_errors: True
+
+- name: "disk_prepare | Create an filesystem on {{ disk_path }}1"
+  filesystem:
+    fstype: "{{ filesystem_type | default('xfs') }}"
+    dev: "{{ disk_path }}1"
+  when: partition_detail.changed
+
+- name: disk_prepare | Create an mountpoint directory
+  file:
+    path: /mnt/{{ inventory_hostname }}
+    state: directory
+
+- name: disk_prepare | Create entry in fstab
+  mount:
+    path: /mnt/{{ inventory_hostname }}
+    src: "{{ disk_path }}1"
+    fstype: xfs
+    state: present
+
+- name: disk_prepare | Mount the partitions in fstab
+  command: mount -a
+  args:
+    warn: no
+  ignore_errors: True
+
+- name: "disk_prepare | Ensure the {{ disk_path }} is mounted"
+  command: "mountpoint -q /mnt/{{ inventory_hostname }}"
+  register: mounted
+
+- name: "disk_prepare | Is {{ disk_mount_path }} mounted?"
+  debug:
+    msg: "Yes, It is."
+  when: mounted.rc == 0

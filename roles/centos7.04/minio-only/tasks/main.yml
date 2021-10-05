@@ -1,0 +1,39 @@
+---
+# tasks to install and configure the Minio
+- name: minio_install | set hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: minio_install | Populate /etc/hosts
+  import_tasks: etchosts.yml
+
+- name: minio_install | Disable the selinux
+  selinux:
+    state: disabled
+
+- name: minio_install | Prepare the disk
+  import_tasks: disk.yml
+
+- name: minio_install | Install the minio server
+  import_tasks: install-server.yml
+
+- name: minio_install | Configure the SSL/TLS for minio
+  import_tasks: ssl.yml
+  tags:
+  - SSL
+
+- name: minio_install | download the minio client
+  local_action:
+    module: get_url
+    url: "{{ minio_client_download_url }}"
+    dest: /tmp/mc
+  when: not skip_client
+
+- name: minio_install | copy the minio client to remote server
+  copy:
+    src: /tmp/mc
+    dest: "{{ minio_client_bin }}"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: 0755
+  when: not skip_client
